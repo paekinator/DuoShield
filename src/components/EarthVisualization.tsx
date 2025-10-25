@@ -95,54 +95,116 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     earthGroup.position.set(0, 0, 0); // Ensure Earth is centered at origin
     earthGroupRef.current = earthGroup;
 
-    // Load Earth model from OBJ file
-    const earthObjLoader = new OBJLoader();
-    earthObjLoader.load('/models/earth_model.obj', (object) => {
-      // Scale the Earth model to appropriate size
-      object.scale.set(6371, 6371, 6371); // Scale to Earth radius
-      
-      // Apply Earth material with more visible properties
-      const earthMaterial = new THREE.MeshStandardMaterial({
-        color: 0x4a90e2, // Blue Earth color
-        emissive: 0x0a1a2e,
-        emissiveIntensity: 0.3, // Increased emissive intensity
-        roughness: 0.7,
-        metalness: 0.1,
-        flatShading: true,
-        transparent: false, // Ensure it's not transparent
-        opacity: 1.0, // Full opacity
-      });
-      
-      // Apply material to all meshes in the loaded object
-      object.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          // Ensure the mesh has a material
-          if (!child.material) {
-            child.material = earthMaterial;
-          } else {
-            // Replace existing material
-            child.material = earthMaterial;
-          }
-          child.material.needsUpdate = true; // Force material update
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      
-      earthGroup.add(object);
-      console.log('✅ Earth model loaded successfully!');
-      console.log('Earth model details:', {
-        children: object.children.length,
-        position: object.position,
-        scale: object.scale,
-        visible: object.visible
-      });
-    }, undefined, (error) => {
-      console.error('❌ Failed to load Earth model:', error);
+    // Create Low-Poly Earth with realistic geography
+    const earthGeometry = new THREE.IcosahedronGeometry(6371, 3); // Low poly icosahedron
+    
+    // Create Earth material with vertex colors
+    const earthMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff, // White base for vertex colors
+      emissive: 0x0a1a2e,
+      emissiveIntensity: 0.15,
+      roughness: 0.85,
+      metalness: 0.15,
+      flatShading: true, // Low-poly look
     });
 
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    
+    // Create realistic Earth colors with continents, oceans, and poles
+    const positionAttribute = earthGeometry.getAttribute('position');
+    const colors = new Float32Array(positionAttribute.count * 3);
+    const color = new THREE.Color();
+    
+    for (let i = 0; i < positionAttribute.count; i++) {
+      const x = positionAttribute.getX(i);
+      const y = positionAttribute.getY(i);
+      const z = positionAttribute.getZ(i);
+      
+      // Calculate latitude and longitude
+      const latitude = Math.asin(y / 6371) * (180 / Math.PI); // -90 to 90
+      const longitude = Math.atan2(z, x) * (180 / Math.PI); // -180 to 180
+      
+      // Polar ice caps
+      if (Math.abs(latitude) > 75) {
+        // Arctic/Antarctic - white ice
+        const iceVariation = 0.92 + Math.random() * 0.08;
+        color.setRGB(iceVariation, iceVariation, iceVariation);
+      }
+      // North America (roughly)
+      else if (latitude > 15 && latitude < 70 && longitude > -170 && longitude < -50) {
+        const isLand = (latitude > 25 && longitude > -125) || 
+                       (latitude > 40 && longitude > -100) ||
+                       (latitude > 50 && longitude < -90);
+        if (isLand) {
+          // Land - greens and browns
+          color.setRGB(0.25 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+        } else {
+          // Ocean
+          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        }
+      }
+      // South America (roughly)
+      else if (latitude > -55 && latitude < 15 && longitude > -85 && longitude < -30) {
+        const isLand = Math.abs(longitude + 60) < 25 && latitude > -40;
+        if (isLand) {
+          color.setRGB(0.2 + Math.random() * 0.15, 0.5 + Math.random() * 0.15, 0.1 + Math.random() * 0.1);
+        } else {
+          color.setRGB(0.08 + Math.random() * 0.05, 0.28 + Math.random() * 0.1, 0.48 + Math.random() * 0.15);
+        }
+      }
+      // Europe and Africa (roughly)
+      else if (latitude > -40 && latitude < 70 && longitude > -20 && longitude < 50) {
+        const isLand = (latitude > 35 && longitude > -10 && longitude < 40) || // Europe
+                       (latitude < 35 && latitude > -35 && longitude > -20 && longitude < 50); // Africa
+        if (isLand) {
+          if (latitude < 20 && latitude > -10) {
+            // Sahara desert region
+            color.setRGB(0.7 + Math.random() * 0.15, 0.6 + Math.random() * 0.15, 0.3 + Math.random() * 0.15);
+          } else {
+            // Other land
+            color.setRGB(0.25 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+          }
+        } else {
+          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        }
+      }
+      // Asia (roughly)
+      else if (latitude > 0 && latitude < 75 && longitude > 50 && longitude < 150) {
+        const isLand = true; // Most of this region is land
+        if (isLand) {
+          color.setRGB(0.3 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+        } else {
+          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        }
+      }
+      // Australia (roughly)
+      else if (latitude > -45 && latitude < -10 && longitude > 110 && longitude < 155) {
+        const isLand = true;
+        if (isLand) {
+          // Australia - more brown/red
+          color.setRGB(0.55 + Math.random() * 0.15, 0.4 + Math.random() * 0.15, 0.2 + Math.random() * 0.1);
+        } else {
+          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        }
+      }
+      // Default - Ocean (Pacific, Atlantic, Indian)
+      else {
+        // Deep ocean blues
+        color.setRGB(0.08 + Math.random() * 0.05, 0.25 + Math.random() * 0.1, 0.45 + Math.random() * 0.15);
+      }
+      
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+    
+    earthGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    earthMaterial.vertexColors = true;
+    
+    earthGroup.add(earth);
+
     // Add wireframe overlay for tech look - BRIGHTER and more visible
-    const wireframeGeometry = new THREE.IcosahedronGeometry(6371 + 25, 3);
+    const wireframeGeometry = new THREE.IcosahedronGeometry(6371 + 15, 3);
     const wireframeMaterial = new THREE.MeshBasicMaterial({
       color: 0x00ffaa, // Bright cyan/green
       wireframe: true,
