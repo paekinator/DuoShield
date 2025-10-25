@@ -54,8 +54,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
 # Backend specific
 backend/__pycache__/
 backend/*.pyc
 backend/.env
+backend/.venv/
