@@ -1,0 +1,301 @@
+import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+impo              satellites.push(satellite);
+              scene.add(satellite);
+              satellite.visible = false;
+              console.log(`Satellite ${i + 1} loaded from ${modelPath} with materials`);
+            },
+            (progress) => {
+              console.log(`Loading satellite ${i + 1}:`, (progress.loaded / progress.total * 100) + '% loaded');
+            },
+            (error) => {
+              console.error(`Error loading satellite ${modelPath}:`, error);Loader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+
+const ThreeBackground = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Scene setup with black background
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    containerRef.current.appendChild(renderer.domElement);
+
+    // Create starfield with WHITE squares
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 1500;
+    const posArray = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 30;
+    }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0xffffff, // White particles
+      size: 0.03,
+      transparent: true,
+    });
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+
+    // Add lighting for the ISS model
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+    
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight2.position.set(-5, -5, -5);
+    scene.add(directionalLight2);
+
+    // Loaders
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+    loader.setDRACOLoader(dracoLoader);
+
+    // Load ISS Model using OBJ/MTL loaders
+    let iss: THREE.Group;
+    const mtlLoader = new MTLLoader();
+    mtlLoader.load(
+      '/models/iss.mtl',
+      (materials) => {
+        materials.preload();
+        const objLoader = new OBJLoader();
+        objLoader.setMaterials(materials);
+        objLoader.load(
+          '/models/iss.obj',
+          (object) => {
+            iss = object;
+            // Bigger size for ISS
+            iss.scale.set(0.08, 0.08, 0.08);
+            // Position in the center of the screen
+            iss.position.set(0, 0, 0);
+            scene.add(iss);
+            console.log('ISS model loaded successfully', iss);
+          },
+          (progress) => {
+            console.log('Loading ISS OBJ:', (progress.loaded / progress.total * 100) + '% loaded');
+          },
+          (error) => {
+            console.error('Error loading ISS OBJ:', error);
+          }
+        );
+      },
+      (progress) => {
+        console.log('Loading ISS MTL:', (progress.loaded / progress.total * 100) + '% loaded');
+      },
+      (error) => {
+        console.error('Error loading ISS MTL:', error);
+      }
+    );
+
+    // Load Satellite Models using OBJ loader
+    const satellites: THREE.Group[] = [];
+    const satelliteCount = 5;
+    const satelliteModels = [
+      '/models/satellite1.obj',
+      '/models/satellite2.obj',
+      '/models/satellite3.obj',
+      '/models/satellite4.obj',
+      '/models/satellite5.obj',
+    ];
+
+    const objLoader = new OBJLoader();
+    
+    for (let i = 0; i < satelliteCount; i++) {
+      const modelPath = satelliteModels[i];
+      const mtlPath = modelPath.replace('.obj', '.mtl');
+      
+      // Load MTL first to preserve original colors
+      const mtlLoader = new MTLLoader();
+      mtlLoader.load(
+        mtlPath,
+        (materials) => {
+          materials.preload();
+          const objLoaderWithMaterial = new OBJLoader();
+          objLoaderWithMaterial.setMaterials(materials);
+          objLoaderWithMaterial.load(
+            modelPath,
+            (object) => {
+              const satellite = object;
+              
+              // Make all satellites uniformly smaller
+              satellite.scale.set(0.008, 0.008, 0.008);
+
+              const direction = i % 2 === 0 ? 1 : -1; // 1 = move right (left to right), -1 = move left (right to left)
+
+              // Start VERY far off-screen on the left or right, much further in the background
+              satellite.position.x = direction > 0 ? -50 : 50; // Very far off-screen to ensure not visible
+              satellite.position.y = (Math.random() - 0.5) * 6; // Random Y position, stays fixed
+              satellite.position.z = -30 - Math.random() * 10; // Much further back in the background
+
+              satellite.userData = {
+                speed: 0.005 + Math.random() * 0.003, // Much slower movement speed
+                direction: direction,
+                fixedY: satellite.position.y, // Store the fixed Y position
+                fixedZ: satellite.position.z, // Store the fixed Z position - no depth movement
+                rotationSpeedX: 0.0005 + Math.random() * 0.0005, // Much slower rotation
+                rotationSpeedY: 0.001 + Math.random() * 0.0005, // Much slower rotation
+                rotationSpeedZ: 0.0005 + Math.random() * 0.0005, // Much slower rotation
+                startDelay: 1000 + i * 1000, // Stagger appearance: 1s, 2s, 3s, etc.
+                startTime: Date.now(),
+                visible: false,
+              };
+
+              satellites.push(satellite);
+              scene.add(satellite);
+              satellite.visible = false; // Start invisible
+              console.log(`Satellite ${i + 1} loaded from ${modelPath} with materials`);
+            },
+            (progress) => {
+              console.log(`Loading satellite ${i + 1}:`, (progress.loaded / progress.total * 100) + '% loaded');
+            },
+            (error) => {
+              console.error(`Error loading satellite ${modelPath}:`, error);
+            }
+          );
+        },
+        undefined,
+        (error) => {
+          console.error(`Error loading materials for ${mtlPath}:`, error);
+          // Fallback: load without materials if MTL fails
+          objLoader.load(modelPath, (object) => {
+            const satellite = object;
+            satellite.scale.set(0.008, 0.008, 0.008);
+            const direction = i % 2 === 0 ? 1 : -1;
+            satellite.position.x = direction > 0 ? -50 : 50;
+            satellite.position.y = (Math.random() - 0.5) * 6;
+            satellite.position.z = -30 - Math.random() * 10;
+            satellite.userData = {
+              speed: 0.005 + Math.random() * 0.003,
+              direction: direction,
+              fixedY: satellite.position.y,
+              fixedZ: satellite.position.z,
+              rotationSpeedX: 0.0005 + Math.random() * 0.0005,
+              rotationSpeedY: 0.001 + Math.random() * 0.0005,
+              rotationSpeedZ: 0.0005 + Math.random() * 0.0005,
+              startDelay: 1000 + i * 1000,
+              startTime: Date.now(),
+              visible: false,
+            };
+            satellites.push(satellite);
+            scene.add(satellite);
+            satellite.visible = false;
+            console.log(`Satellite ${i + 1} loaded without materials`);
+          });
+        }
+      );
+    }
+
+    camera.position.z = 5;
+
+    // Mouse movement
+    let mouseX = 0;
+    let mouseY = 0;
+    const handleMouseMove = (event: MouseEvent) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Animation loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      particlesMesh.rotation.y += 0.0001;
+
+      // ISS slowly rotating in place at the center
+      if (iss) {
+        iss.rotation.y += 0.001; // Slower rotation on Y axis
+        iss.rotation.x += 0.0003; // Very slight rotation on X axis
+        // Position stays fixed at (0, 0, 0) - no movement
+      }
+
+      satellites.forEach((satellite) => {
+        // Check if satellite should become visible based on delay
+        if (!satellite.userData.visible) {
+          const elapsed = Date.now() - satellite.userData.startTime;
+          if (elapsed > satellite.userData.startDelay) {
+            satellite.visible = true;
+            satellite.userData.visible = true;
+          } else {
+            return; // Skip this satellite until it's time to show
+          }
+        }
+
+        // Move satellite ONLY horizontally (left to right or right to left)
+        satellite.position.x += satellite.userData.speed * satellite.userData.direction;
+        
+        // Keep Y position FIXED - no vertical movement
+        satellite.position.y = satellite.userData.fixedY;
+        
+        // Keep Z position FIXED - no depth movement (closer/further)
+        satellite.position.z = satellite.userData.fixedZ;
+        
+        // Rotate satellite
+        satellite.rotation.x += satellite.userData.rotationSpeedX;
+        satellite.rotation.y += satellite.userData.rotationSpeedY;
+        satellite.rotation.z += satellite.userData.rotationSpeedZ;
+
+        // Wrap around: if satellite goes off-screen, restart from opposite side
+        if (satellite.userData.direction > 0 && satellite.position.x > 50) {
+          satellite.position.x = -50;
+        } else if (satellite.userData.direction < 0 && satellite.position.x < -50) {
+          satellite.position.x = 50;
+        }
+      });
+
+      camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.01;
+      camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.01;
+      // Make camera look at center where ISS is
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (containerRef.current) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+    };
+  }, []);
+
+  return <div ref={containerRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: -1, width: '100vw', height: '100vh' }} />;
+};
+
+export default ThreeBackground;

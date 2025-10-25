@@ -1,0 +1,240 @@
+.space-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #000814 0%, #001d3d 50%, #000814 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.stars, .stars2, .stars3 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.stars {
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 160px 30px, #ddd, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.stars2 {
+  background-image: 
+    radial-gradient(1px 1px at 30px 20px, #fff, transparent),
+    radial-gradient(1px 1px at 60px 50px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 100px 80px, #eee, transparent),
+    radial-gradient(1px 1px at 150px 40px, rgba(255,255,255,0.5), transparent);
+  background-repeat: repeat;
+  background-size: 300px 150px;
+  animation: twinkle 4s ease-in-out infinite reverse;
+}
+
+.stars3 {
+  background-image: 
+    radial-gradient(1px 1px at 25px 15px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 80px 60px, #fff, transparent),
+    radial-gradient(1px 1px at 120px 25px, rgba(255,255,255,0.6), transparent);
+  background-repeat: repeat;
+  background-size: 250px 120px;
+  animation: twinkle 5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.loading-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: #fff;
+  max-width: 500px;
+  padding: 2rem;
+}
+
+.loading-logo {
+  margin-bottom: 2rem;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.loading-logo-img {
+  height: 80px;
+  width: auto;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.loading-title h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, #00ff88 0%, #00aaff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+}
+
+.loading-title p {
+  font-size: 1.2rem;
+  color: #888;
+  margin: 0;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.loading-progress {
+  margin: 3rem 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88 0%, #00aaff 100%);
+  border-radius: 2px;
+  transition: width 0.8s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.progress-text {
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  min-height: 1.2rem;
+}
+
+.progress-percentage {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.loading-animation {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.satellite {
+  position: relative;
+  animation: satelliteOrbit 4s linear infinite;
+}
+
+.satellite-body {
+  width: 20px;
+  height: 15px;
+  background: linear-gradient(45deg, #333, #666);
+  border-radius: 3px;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.satellite-solar-panel {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 3px;
+  background: linear-gradient(45deg, #00ff88, #00aaff);
+  border-radius: 1px;
+  transform: translateY(-50%);
+}
+
+.satellite-solar-panel.left {
+  left: -8px;
+  animation: solarPanel 2s ease-in-out infinite;
+}
+
+.satellite-solar-panel.right {
+  right: -8px;
+  animation: solarPanel 2s ease-in-out infinite reverse;
+}
+
+.satellite-antenna {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 1px;
+  height: 8px;
+  background: #00ff88;
+  transform: translateX(-50%);
+  box-shadow: 0 0 5px rgba(0, 255, 136, 0.8);
+}
+
+@keyframes satelliteOrbit {
+  0% { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+@keyframes solarPanel {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  50% { transform: translateY(-50%) rotate(10deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .loading-title h1 {
+    font-size: 2rem;
+  }
+  
+  .loading-logo-img {
+    height: 60px;
+  }
+  
+  .loading-content {
+    padding: 1rem;
+  }
+}
