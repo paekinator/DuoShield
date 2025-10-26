@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API = import.meta.env.VITE_API_BASE ?? "https://azspace-production.railway.app";
+const API = import.meta.env.VITE_API_BASE ?? "https://duoshield-production.up.railway.app";
 
 export default function Analyze() {
   const [tle1, setTle1] = useState("");
