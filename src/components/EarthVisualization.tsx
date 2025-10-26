@@ -95,113 +95,233 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     earthGroup.position.set(0, 0, 0); // Ensure Earth is centered at origin
     earthGroupRef.current = earthGroup;
 
-    // Create Low-Poly Earth with realistic geography
-    const earthGeometry = new THREE.IcosahedronGeometry(6371, 3); // Low poly icosahedron
+    // Load Earth model from OBJ file
+    const earthObjLoader = new OBJLoader();
+    const earthMtlLoader = new MTLLoader();
     
-    // Create Earth material with vertex colors
-    const earthMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff, // White base for vertex colors
-      emissive: 0x0a1a2e,
-      emissiveIntensity: 0.15,
-      roughness: 0.85,
-      metalness: 0.15,
-      flatShading: true, // Low-poly look
-    });
+    // Try to load with materials first, fallback to OBJ only
+    const loadEarthWithMaterials = () => {
+      earthMtlLoader.load(
+        '/models/earth_materials.mtl', // Earth materials file
+        (materials) => {
+          materials.preload();
+          earthObjLoader.setMaterials(materials);
+          earthObjLoader.load(
+            '/models/earth_model.obj',
+            (object) => {
+              const earth = object;
+              // Scale the model to appropriate size (Earth radius ~6371 km)
+              // First, let's check the bounding box to determine proper scaling
+              const box = new THREE.Box3().setFromObject(earth);
+              const size = box.getSize(new THREE.Vector3());
+              const maxDimension = Math.max(size.x, size.y, size.z);
+              const scaleFactor = 6371 / (maxDimension / 2); // Earth radius / (model radius)
+              
+              earth.scale.set(scaleFactor, scaleFactor, scaleFactor);
+              
+              // Ensure the model is properly positioned and visible
+              earth.position.set(0, 0, 0);
+              earth.rotation.set(0, 0, 0);
+              
+              // Use the original materials from the OBJ file
+              earth.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  console.log('Earth mesh material:', child.material);
+                  console.log('Material color:', child.material?.color?.getHexString());
+                  
+                  // Keep the original material, just ensure it's properly configured
+                  if (child.material) {
+                    child.material.needsUpdate = true;
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                  }
+                }
+              });
+              
+              earthGroup.add(earth);
+              console.log('✅ Earth model loaded with materials');
+              console.log('Model size:', size, 'Scale factor:', scaleFactor);
+              console.log('Earth position:', earth.position);
+            },
+            undefined,
+            (error) => {
+              console.warn('Failed to load Earth with materials, trying OBJ only:', error);
+              loadEarthObjOnly();
+            }
+          );
+        },
+        undefined,
+        (error) => {
+          console.warn('Failed to load Earth materials, trying OBJ only:', error);
+          loadEarthObjOnly();
+        }
+      );
+    };
 
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    
-    // Create realistic Earth colors with continents, oceans, and poles
-    const positionAttribute = earthGeometry.getAttribute('position');
-    const colors = new Float32Array(positionAttribute.count * 3);
-    const color = new THREE.Color();
-    
-    for (let i = 0; i < positionAttribute.count; i++) {
-      const x = positionAttribute.getX(i);
-      const y = positionAttribute.getY(i);
-      const z = positionAttribute.getZ(i);
-      
-      // Calculate latitude and longitude
-      const latitude = Math.asin(y / 6371) * (180 / Math.PI); // -90 to 90
-      const longitude = Math.atan2(z, x) * (180 / Math.PI); // -180 to 180
-      
-      // Polar ice caps
-      if (Math.abs(latitude) > 75) {
-        // Arctic/Antarctic - white ice
-        const iceVariation = 0.92 + Math.random() * 0.08;
-        color.setRGB(iceVariation, iceVariation, iceVariation);
-      }
-      // North America (roughly)
-      else if (latitude > 15 && latitude < 70 && longitude > -170 && longitude < -50) {
-        const isLand = (latitude > 25 && longitude > -125) || 
-                       (latitude > 40 && longitude > -100) ||
-                       (latitude > 50 && longitude < -90);
-        if (isLand) {
-          // Land - greens and browns
-          color.setRGB(0.25 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
-        } else {
-          // Ocean
-          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+    const loadEarthObjOnly = () => {
+      earthObjLoader.load(
+        '/models/earth_model.obj',
+        (object) => {
+          const earth = object;
+          // Scale the model to appropriate size (Earth radius ~6371 km)
+          // First, let's check the bounding box to determine proper scaling
+          const box = new THREE.Box3().setFromObject(earth);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDimension = Math.max(size.x, size.y, size.z);
+          const scaleFactor = 6371 / (maxDimension / 2); // Earth radius / (model radius)
+          
+          earth.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          
+          // Ensure the model is properly positioned and visible
+          earth.position.set(0, 0, 0);
+          earth.rotation.set(0, 0, 0);
+          
+          // Apply a basic material if no materials were loaded
+          earth.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              // Only apply fallback material if the original is white/default
+              if (!child.material || child.material.color.getHex() === 0xffffff) {
+                child.material = new THREE.MeshStandardMaterial({
+                  color: 0x4169e1, // Ocean blue
+                  emissive: 0x0a1a2e,
+                  emissiveIntensity: 0.15,
+                  roughness: 0.85,
+                  metalness: 0.15,
+                });
+              }
+              child.material.needsUpdate = true;
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          
+          earthGroup.add(earth);
+          console.log('✅ Earth model loaded (OBJ only)');
+          console.log('Model size:', size, 'Scale factor:', scaleFactor);
+          console.log('Earth position:', earth.position);
+        },
+        undefined,
+        (error) => {
+          console.error('Failed to load Earth model:', error);
+          // Fallback to procedural Earth if model fails to load
+          createProceduralEarth();
         }
-      }
-      // South America (roughly)
-      else if (latitude > -55 && latitude < 15 && longitude > -85 && longitude < -30) {
-        const isLand = Math.abs(longitude + 60) < 25 && latitude > -40;
-        if (isLand) {
-          color.setRGB(0.2 + Math.random() * 0.15, 0.5 + Math.random() * 0.15, 0.1 + Math.random() * 0.1);
-        } else {
-          color.setRGB(0.08 + Math.random() * 0.05, 0.28 + Math.random() * 0.1, 0.48 + Math.random() * 0.15);
+      );
+    };
+
+    const createProceduralEarth = () => {
+      console.log('Creating procedural Earth as fallback');
+      // Create Low-Poly Earth with realistic geography
+      const earthGeometry = new THREE.IcosahedronGeometry(6371, 3); // Low poly icosahedron
+      
+      // Create Earth material with vertex colors
+      const earthMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff, // White base for vertex colors
+        emissive: 0x0a1a2e,
+        emissiveIntensity: 0.15,
+        roughness: 0.85,
+        metalness: 0.15,
+        flatShading: true, // Low-poly look
+      });
+
+      const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+      
+      // Create realistic Earth colors with continents, oceans, and poles
+      const positionAttribute = earthGeometry.getAttribute('position');
+      const colors = new Float32Array(positionAttribute.count * 3);
+      const color = new THREE.Color();
+      
+      for (let i = 0; i < positionAttribute.count; i++) {
+        const x = positionAttribute.getX(i);
+        const y = positionAttribute.getY(i);
+        const z = positionAttribute.getZ(i);
+        
+        // Calculate latitude and longitude
+        const latitude = Math.asin(y / 6371) * (180 / Math.PI); // -90 to 90
+        const longitude = Math.atan2(z, x) * (180 / Math.PI); // -180 to 180
+        
+        // Polar ice caps
+        if (Math.abs(latitude) > 75) {
+          // Arctic/Antarctic - white ice
+          const iceVariation = 0.92 + Math.random() * 0.08;
+          color.setRGB(iceVariation, iceVariation, iceVariation);
         }
-      }
-      // Europe and Africa (roughly)
-      else if (latitude > -40 && latitude < 70 && longitude > -20 && longitude < 50) {
-        const isLand = (latitude > 35 && longitude > -10 && longitude < 40) || // Europe
-                       (latitude < 35 && latitude > -35 && longitude > -20 && longitude < 50); // Africa
-        if (isLand) {
-          if (latitude < 20 && latitude > -10) {
-            // Sahara desert region
-            color.setRGB(0.7 + Math.random() * 0.15, 0.6 + Math.random() * 0.15, 0.3 + Math.random() * 0.15);
-          } else {
-            // Other land
+        // North America (roughly)
+        else if (latitude > 15 && latitude < 70 && longitude > -170 && longitude < -50) {
+          const isLand = (latitude > 25 && longitude > -125) || 
+                         (latitude > 40 && longitude > -100) ||
+                         (latitude > 50 && longitude < -90);
+          if (isLand) {
+            // Land - greens and browns
             color.setRGB(0.25 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+          } else {
+            // Ocean
+            color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
           }
-        } else {
-          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
         }
-      }
-      // Asia (roughly)
-      else if (latitude > 0 && latitude < 75 && longitude > 50 && longitude < 150) {
-        const isLand = true; // Most of this region is land
-        if (isLand) {
-          color.setRGB(0.3 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
-        } else {
-          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        // South America (roughly)
+        else if (latitude > -55 && latitude < 15 && longitude > -85 && longitude < -30) {
+          const isLand = Math.abs(longitude + 60) < 25 && latitude > -40;
+          if (isLand) {
+            color.setRGB(0.2 + Math.random() * 0.15, 0.5 + Math.random() * 0.15, 0.1 + Math.random() * 0.1);
+          } else {
+            color.setRGB(0.08 + Math.random() * 0.05, 0.28 + Math.random() * 0.1, 0.48 + Math.random() * 0.15);
+          }
         }
-      }
-      // Australia (roughly)
-      else if (latitude > -45 && latitude < -10 && longitude > 110 && longitude < 155) {
-        const isLand = true;
-        if (isLand) {
-          // Australia - more brown/red
-          color.setRGB(0.55 + Math.random() * 0.15, 0.4 + Math.random() * 0.15, 0.2 + Math.random() * 0.1);
-        } else {
-          color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+        // Europe and Africa (roughly)
+        else if (latitude > -40 && latitude < 70 && longitude > -20 && longitude < 50) {
+          const isLand = (latitude > 35 && longitude > -10 && longitude < 40) || // Europe
+                         (latitude < 35 && latitude > -35 && longitude > -20 && longitude < 50); // Africa
+          if (isLand) {
+            if (latitude < 20 && latitude > -10) {
+              // Sahara desert region
+              color.setRGB(0.7 + Math.random() * 0.15, 0.6 + Math.random() * 0.15, 0.3 + Math.random() * 0.15);
+            } else {
+              // Other land
+              color.setRGB(0.25 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+            }
+          } else {
+            color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+          }
         }
-      }
-      // Default - Ocean (Pacific, Atlantic, Indian)
-      else {
-        // Deep ocean blues
-        color.setRGB(0.08 + Math.random() * 0.05, 0.25 + Math.random() * 0.1, 0.45 + Math.random() * 0.15);
+        // Asia (roughly)
+        else if (latitude > 0 && latitude < 75 && longitude > 50 && longitude < 150) {
+          const isLand = true; // Most of this region is land
+          if (isLand) {
+            color.setRGB(0.3 + Math.random() * 0.15, 0.45 + Math.random() * 0.15, 0.15 + Math.random() * 0.1);
+          } else {
+            color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+          }
+        }
+        // Australia (roughly)
+        else if (latitude > -45 && latitude < -10 && longitude > 110 && longitude < 155) {
+          const isLand = true;
+          if (isLand) {
+            // Australia - more brown/red
+            color.setRGB(0.55 + Math.random() * 0.15, 0.4 + Math.random() * 0.15, 0.2 + Math.random() * 0.1);
+          } else {
+            color.setRGB(0.1 + Math.random() * 0.05, 0.3 + Math.random() * 0.1, 0.5 + Math.random() * 0.15);
+          }
+        }
+        // Default - Ocean (Pacific, Atlantic, Indian)
+        else {
+          // Deep ocean blues
+          color.setRGB(0.08 + Math.random() * 0.05, 0.25 + Math.random() * 0.1, 0.45 + Math.random() * 0.15);
+        }
+        
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
       }
       
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-    
-    earthGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    earthMaterial.vertexColors = true;
-    
-    earthGroup.add(earth);
+      earthGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      earthMaterial.vertexColors = true;
+      
+      earthGroup.add(earth);
+    };
+
+    // Try to load the Earth model
+    loadEarthWithMaterials();
 
     // Add wireframe overlay for tech look - BRIGHTER and more visible
     const wireframeGeometry = new THREE.IcosahedronGeometry(6371 + 15, 3);
@@ -298,16 +418,16 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     connectionLineRef.current = connectionLine;
 
     // Load real satellite 3D model (same as home page)
-    const objLoader = new OBJLoader();
-    const mtlLoader = new MTLLoader();
+    const satObjLoader = new OBJLoader();
+    const satMtlLoader = new MTLLoader();
     
     // Try to load satellite with MTL (material) first
-    mtlLoader.load(
+    satMtlLoader.load(
       '/models/satellite2.mtl',
       (materials) => {
         materials.preload();
-        objLoader.setMaterials(materials);
-        objLoader.load(
+        satObjLoader.setMaterials(materials);
+        satObjLoader.load(
           '/models/satellite2.obj',
           (object) => {
             const satelliteModel = object;
@@ -495,15 +615,15 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       const selectedSat = satellites.find(s => s.isSelected === true);
       
       if (!isDragging && !selectedSat) {
-        earthGroup.rotation.y += 0.001;
+        earthGroup.rotation.y += 0.0002; // Much slower rotation
         rotationVelocity.x *= 0.95;
         rotationVelocity.y *= 0.95;
       }
       // If satellite is selected or user is dragging, Earth stays still!
 
-      // Animate satellites
+      // Animate satellites (slower rotation)
       satelliteMeshesRef.current.forEach((mesh) => {
-        mesh.rotation.y += 0.02;
+        mesh.rotation.y += 0.005; // Much slower satellite rotation
       });
 
       // Smoothly animate camera to target position
@@ -537,8 +657,8 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       if (satelliteModelRef.current && satelliteModelRef.current.visible) {
         // Rotate the satellite model slowly for realistic effect
         // Position stays fixed at (0, 0, 8000) - center of graphic
-        satelliteModelRef.current.rotation.y += 0.005;
-        satelliteModelRef.current.rotation.x += 0.002;
+        satelliteModelRef.current.rotation.y += 0.002; // Slower rotation
+        satelliteModelRef.current.rotation.x += 0.001; // Slower rotation
       }
 
       camera.lookAt(0, 0, 0);
@@ -622,15 +742,15 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
 
     // Load the same satellite model from home page
     let satelliteOverlayModel: THREE.Group | null = null;
-    const objLoader = new OBJLoader();
-    const mtlLoader = new MTLLoader();
+    const overlayObjLoader = new OBJLoader();
+    const overlayMtlLoader = new MTLLoader();
     
-    mtlLoader.load(
+    overlayMtlLoader.load(
       '/models/satellite2.mtl',
       (materials) => {
         materials.preload();
-        objLoader.setMaterials(materials);
-        objLoader.load(
+        overlayObjLoader.setMaterials(materials);
+        overlayObjLoader.load(
           '/models/satellite2.obj',
           (object) => {
             satelliteOverlayModel = object;
@@ -727,9 +847,9 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       animationId = requestAnimationFrame(animateOverlay);
 
       if (satelliteOverlayModel) {
-        // More horizontal rotation, less vertical
-        satelliteOverlayModel.rotation.y += 0.01; // Faster horizontal spin
-        satelliteOverlayModel.rotation.x += 0.0005; // Much less vertical tilt
+        // More horizontal rotation, less vertical (slower)
+        satelliteOverlayModel.rotation.y += 0.003; // Slower horizontal spin
+        satelliteOverlayModel.rotation.x += 0.0002; // Much less vertical tilt
       }
 
       overlayCamera.lookAt(0, 0, 0);

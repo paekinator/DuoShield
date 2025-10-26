@@ -46,6 +46,7 @@ const Header = () => {
         
         <nav className="nav-menu">
           <Link to="/features" className={`nav-link ${location.pathname === '/features' ? 'active' : ''}`}>Features</Link>
+          <Link to="/mission-control" className={`nav-link ${location.pathname === '/mission-control' ? 'active' : ''}`}>DuoShield</Link>
           <Link to="/about" className={`nav-link ${location.pathname === '/about' ? 'active' : ''}`}>About</Link>
           <Link to="/contact" className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
         </nav>

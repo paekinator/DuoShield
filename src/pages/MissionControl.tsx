@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import EarthVisualization from '../components/EarthVisualization';
 import AlertPanel from '../components/AlertPanel';
 import DecisionDashboard from '../components/DecisionDashboard';
 import SpaceWeatherPanel from '../components/SpaceWeatherPanel';
+import AlertDetailOverlay from '../components/AlertDetailOverlay';
 import './MissionControl.css';
 
 const API = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -43,6 +44,17 @@ interface Alert {
   distance?: number;
   tca?: string;
   acknowledged: boolean;
+  details?: {
+    distance?: number;
+    tca?: string;
+    relativeSpeed?: number;
+    probability?: number;
+    confidence?: number;
+    source?: string;
+    recommendation?: string;
+    impact?: string;
+    mitigation?: string;
+  };
 }
 
 interface Decision {
@@ -59,10 +71,11 @@ const MissionControl = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [spaceWeather, setSpaceWeather] = useState<any>(null);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [showAddSatellite, setShowAddSatellite] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newSatellite, setNewSatellite] = useState({
     name: '',
@@ -346,13 +359,6 @@ const MissionControl = () => {
     ));
   };
 
-  const viewAlertDetails = (alertId: string) => {
-    const alert = alerts.find(a => a.id === alertId);
-    if (alert) {
-      console.log('View alert details:', alert);
-      // Could open a modal with more details
-    }
-  };
 
   // Decision handlers
   const approveDecision = (decisionId: string) => {
@@ -409,6 +415,39 @@ const MissionControl = () => {
         }, ...prev]);
       }
     }, 3000);
+  };
+
+  const selectAction = (decisionId: string, action: string) => {
+    console.log(`Selected action ${action} for decision ${decisionId}`);
+    // You can add logic here to handle the selected action
+    // For now, we'll just log it and could update the decision with the selected action
+  };
+
+  const handleViewAlertDetails = (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId);
+    if (alert) {
+      // Add some mock detailed data if not present
+      const alertWithDetails = {
+        ...alert,
+        details: {
+          ...alert.details,
+          distance: alert.distance || Math.random() * 1000 + 50,
+          tca: alert.tca || new Date(Date.now() + Math.random() * 86400000).toISOString(),
+          relativeSpeed: alert.details?.relativeSpeed || Math.random() * 5 + 1,
+          probability: alert.details?.probability || Math.random() * 0.001,
+          confidence: alert.details?.confidence || 0.7 + Math.random() * 0.3,
+          source: alert.details?.source || 'Space-Track.org / CelesTrak',
+          recommendation: alert.details?.recommendation || 'Consider performing a collision avoidance maneuver within the next 24 hours.',
+          impact: alert.details?.impact || 'Potential collision could result in satellite loss and debris generation.',
+          mitigation: alert.details?.mitigation || 'Out-of-plane maneuver recommended with Δv of 0.5-2.0 m/s.'
+        }
+      };
+      setSelectedAlert(alertWithDetails);
+    }
+  };
+
+  const handleCloseAlertOverlay = () => {
+    setSelectedAlert(null);
   };
 
 
@@ -700,7 +739,9 @@ const MissionControl = () => {
             <AlertPanel 
               alerts={alerts}
               onAcknowledge={acknowledgeAlert}
-              onViewDetails={viewAlertDetails}
+              onViewDetails={handleViewAlertDetails}
+              selectedAlert={selectedAlert}
+              onCloseOverlay={handleCloseAlertOverlay}
             />
           </div>
 
@@ -710,10 +751,16 @@ const MissionControl = () => {
               onApprove={approveDecision}
               onReject={rejectDecision}
               onExecute={executeDecision}
+              onSelectAction={selectAction}
             />
           </div>
         </div>
       </div>
+
+      <AlertDetailOverlay 
+        alert={selectedAlert} 
+        onClose={handleCloseAlertOverlay} 
+      />
     </div>
   );
 };

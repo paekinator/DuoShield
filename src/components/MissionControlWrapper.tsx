@@ -3,7 +3,7 @@ import MissionControl from '../pages/MissionControl';
 import SpaceLoadingScreen from './SpaceLoadingScreen';
 
 const MissionControlWrapper: React.FC = () => {
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading] = useState(true);
   const [loadingComplete, setLoadingComplete] = useState(false);
 
   const handleLoadingComplete = () => {

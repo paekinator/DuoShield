@@ -29,11 +29,14 @@
 .azspace-logo .logo-icon {
   height: 40px; /* Made bigger */
   width: auto;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 0 rgba(0, 255, 136, 0));
+  animation: subtleFloatMC 6s ease-in-out infinite;
 }
 
 .azspace-logo:hover .logo-icon {
-  transform: scale(1.05); /* Slight scale on hover */
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.3));
 }
 
 .fleet-count {
@@ -691,6 +694,15 @@
   
   .viz-stats {
     flex-wrap: wrap;
+  }
+}
+
+@keyframes subtleFloatMC {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-1px); 
   }
 }
 

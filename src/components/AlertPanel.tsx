@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AlertDetailOverlay from './AlertDetailOverlay';
 import './AlertPanel.css';
 
 interface Alert {
@@ -11,15 +12,28 @@ interface Alert {
   distance?: number;
   tca?: string;
   acknowledged: boolean;
+  details?: {
+    distance?: number;
+    tca?: string;
+    relativeSpeed?: number;
+    probability?: number;
+    confidence?: number;
+    source?: string;
+    recommendation?: string;
+    impact?: string;
+    mitigation?: string;
+  };
 }
 
 interface AlertPanelProps {
   alerts: Alert[];
   onAcknowledge: (alertId: string) => void;
   onViewDetails: (alertId: string) => void;
+  selectedAlert: Alert | null;
+  onCloseOverlay: () => void;
 }
 
-const AlertPanel = ({ alerts, onAcknowledge, onViewDetails }: AlertPanelProps) => {
+const AlertPanel = ({ alerts, onAcknowledge, onViewDetails, selectedAlert, onCloseOverlay }: AlertPanelProps) => {
   const [filter, setFilter] = useState<'all' | 'CRITICAL' | 'HIGH' | 'MEDIUM'>('all');
   const [audioEnabled, setAudioEnabled] = useState(true);
 
@@ -73,6 +87,29 @@ const AlertPanel = ({ alerts, onAcknowledge, onViewDetails }: AlertPanelProps) =
       }
     } catch {
       return 'N/A';
+    }
+  };
+
+  const handleViewDetails = (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId);
+    if (alert) {
+      // Add some mock detailed data if not present
+      const alertWithDetails = {
+        ...alert,
+        details: {
+          ...alert.details,
+          distance: alert.distance || Math.random() * 1000 + 50,
+          tca: alert.tca || new Date(Date.now() + Math.random() * 86400000).toISOString(),
+          relativeSpeed: alert.details?.relativeSpeed || Math.random() * 5 + 1,
+          probability: alert.details?.probability || Math.random() * 0.001,
+          confidence: alert.details?.confidence || 0.7 + Math.random() * 0.3,
+          source: alert.details?.source || 'Space-Track.org / CelesTrak',
+          recommendation: alert.details?.recommendation || 'Consider performing a collision avoidance maneuver within the next 24 hours.',
+          impact: alert.details?.impact || 'Potential collision could result in satellite loss and debris generation.',
+          mitigation: alert.details?.mitigation || 'Out-of-plane maneuver recommended with Δv of 0.5-2.0 m/s.'
+        }
+      };
+      onViewDetails(alertId);
     }
   };
 
@@ -165,7 +202,7 @@ const AlertPanel = ({ alerts, onAcknowledge, onViewDetails }: AlertPanelProps) =
                 )}
                 <button 
                   className="btn-details"
-                  onClick={() => onViewDetails(alert.id)}
+                  onClick={() => handleViewDetails(alert.id)}
                 >
                   Details
                 </button>
@@ -174,6 +211,7 @@ const AlertPanel = ({ alerts, onAcknowledge, onViewDetails }: AlertPanelProps) =
           ))
         )}
       </div>
+
     </div>
   );
 };

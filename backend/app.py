@@ -47,6 +47,10 @@ class MultiSatAnalyzeReq(BaseModel):
 class PositionReq(BaseModel):
     satellites: List[Satellite]
 
+@app.get("/")
+def root():
+    return {"message": "AZSpaceB Orbital API", "version": "0.1.0", "status": "running"}
+
 @app.get("/health")
 def health():
     return {"status": "ok", "utc": datetime.now(timezone.utc).isoformat()}

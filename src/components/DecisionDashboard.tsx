@@ -36,11 +36,13 @@ interface DecisionDashboardProps {
   onApprove: (decisionId: string) => void;
   onReject: (decisionId: string) => void;
   onExecute: (decisionId: string) => void;
+  onSelectAction: (decisionId: string, action: string) => void;
 }
 
-const DecisionDashboard = ({ decisions, onApprove, onReject, onExecute }: DecisionDashboardProps) => {
+const DecisionDashboard = ({ decisions, onApprove, onReject, onExecute, onSelectAction }: DecisionDashboardProps) => {
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [selectedAction, setSelectedAction] = useState<string>('');
 
   const filteredDecisions = filter === 'all' 
     ? decisions 
@@ -77,279 +79,168 @@ const DecisionDashboard = ({ decisions, onApprove, onReject, onExecute }: Decisi
     }
   };
 
+  const getActionOptions = (decision: Decision) => {
+    if (decision.suggestion.type === 'space_weather_mitigation') {
+      return [
+        { value: 'monitor', label: 'Monitor Situation', description: 'Continue monitoring without action' },
+        { value: 'adjust_attitude', label: 'Adjust Attitude', description: 'Change satellite orientation for protection' },
+        { value: 'reduce_power', label: 'Reduce Power', description: 'Lower power consumption during event' },
+        { value: 'safe_mode', label: 'Enter Safe Mode', description: 'Activate protective safe mode' }
+      ];
+    } else {
+      return [
+        { value: 'out_of_plane', label: 'Out-of-Plane Maneuver', description: 'Small Δv perpendicular to orbit' },
+        { value: 'along_track', label: 'Along-Track Maneuver', description: 'Advance or delay orbital position' },
+        { value: 'radial', label: 'Radial Maneuver', description: 'Adjust altitude slightly' },
+        { value: 'monitor', label: 'Monitor Only', description: 'Continue tracking without maneuver' }
+      ];
+    }
+  };
+
+  const handleActionSelect = (decisionId: string, action: string) => {
+    setSelectedAction(action);
+    onSelectAction(decisionId, action);
+  };
+
   return (
     <div className="decision-dashboard">
       <div className="dashboard-header">
-        <h3>Decision Support System</h3>
-        <div className="dashboard-stats">
-          <div className="stat">
-            <span className="stat-value">{decisions.length}</span>
-            <span className="stat-label">Total</span>
+        <h3>Decision Support</h3>
+        <div className="status-indicators">
+          <div className="indicator pending">
+            <div className="indicator-dot"></div>
+            <span>{decisions.filter(d => d.status === 'pending').length}</span>
           </div>
-          <div className="stat">
-            <span className="stat-value">{decisions.filter(d => d.status === 'pending').length}</span>
-            <span className="stat-label">Pending</span>
+          <div className="indicator approved">
+            <div className="indicator-dot"></div>
+            <span>{decisions.filter(d => d.status === 'approved').length}</span>
           </div>
-          <div className="stat">
-            <span className="stat-value">{decisions.filter(d => d.status === 'approved').length}</span>
-            <span className="stat-label">Approved</span>
-          </div>
-          <div className="stat">
-            <span className="stat-value">{decisions.filter(d => d.status === 'executing').length}</span>
-            <span className="stat-label">Executing</span>
+          <div className="indicator executing">
+            <div className="indicator-dot"></div>
+            <span>{decisions.filter(d => d.status === 'executing').length}</span>
           </div>
         </div>
       </div>
 
-      <div className="decision-filters">
-        <button 
-          className={filter === 'all' ? 'active' : ''} 
-          onClick={() => setFilter('all')}
-        >
-          All
-        </button>
-        <button 
-          className={filter === 'pending' ? 'active' : ''} 
-          onClick={() => setFilter('pending')}
-        >
-          Pending Review
-        </button>
-        <button 
-          className={filter === 'approved' ? 'active' : ''} 
-          onClick={() => setFilter('approved')}
-        >
-          Approved
-        </button>
-      </div>
+      <div className="decision-timeline">
+        {filteredDecisions.length === 0 ? (
+          <div className="no-decisions">
+            <div className="no-decisions-icon">📊</div>
+            <p>No decisions {filter !== 'all' && `in ${filter} state`}</p>
+          </div>
+        ) : (
+          filteredDecisions.map((decision, index) => (
+            <div key={decision.id} className="timeline-item">
+              <div className="timeline-marker">
+                <div 
+                  className="marker-dot"
+                  style={{ backgroundColor: getStatusColor(decision.status) }}
+                ></div>
+                {index < filteredDecisions.length - 1 && <div className="timeline-line"></div>}
+              </div>
+              
+              <div className="timeline-content">
+                <div className="decision-card">
+                  <div className="card-header">
+                    <div className="satellite-info">
+                      <span className="satellite-name">{decision.satelliteName}</span>
+                      <span className="threat-type">
+                        {decision.suggestion.type === 'space_weather_mitigation' 
+                          ? decision.suggestion.threat 
+                          : `Conjunction with ${decision.suggestion.event_with}`
+                        }
+                      </span>
+                    </div>
+                    <div className="priority-indicator">
+                      <span 
+                        className="priority-dot"
+                        style={{ backgroundColor: getPriorityColor(
+                          decision.suggestion.priority || 
+                          decision.suggestion.action?.priority || 
+                          'MEDIUM'
+                        ) }}
+                      ></span>
+                    </div>
+                  </div>
 
-      <div className="decision-content">
-        <div className="decision-list">
-          {filteredDecisions.length === 0 ? (
-            <div className="no-decisions">
-              <p>No decisions {filter !== 'all' && `in ${filter} state`}</p>
-            </div>
-          ) : (
-            filteredDecisions.map((decision) => (
-              <div 
-                key={decision.id}
-                className={`decision-item ${selectedDecision?.id === decision.id ? 'selected' : ''}`}
-                onClick={() => setSelectedDecision(decision)}
-              >
-                <div className="decision-item-header">
-                  <span className="decision-satellite">{decision.satelliteName}</span>
-                  <span 
-                    className="decision-status"
-                    style={{ backgroundColor: getStatusColor(decision.status) }}
-                  >
-                    {decision.status.toUpperCase()}
-                  </span>
-                </div>
-                <div className="decision-item-info">
-                  {decision.suggestion.type === 'space_weather_mitigation' ? (
-                    <>
-                      <div className="info-row">
-                        <span className="info-label">Threat:</span>
-                        <span className="info-value">{decision.suggestion.threat}</span>
+                  <div className="card-details">
+                    {decision.suggestion.type === 'space_weather_mitigation' ? (
+                      <div className="detail-row">
+                        <span className="detail-label">Recommendation:</span>
+                        <span className="detail-value">{decision.suggestion.recommendation}</span>
                       </div>
-                      <div className="info-row">
-                        <span className="info-label">Recommendation:</span>
-                        <span className="info-value">{decision.suggestion.recommendation}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Priority:</span>
-                        <span 
-                          className="info-value priority"
-                          style={{ color: getPriorityColor(decision.suggestion.priority || 'MEDIUM') }}
-                        >
-                          {decision.suggestion.priority || 'MEDIUM'}
+                    ) : (
+                      <div className="detail-row">
+                        <span className="detail-label">Distance:</span>
+                        <span className="detail-value danger">
+                          {decision.suggestion.distance_km?.toFixed(2)} km
+                        </span>
+                        <span className="detail-label">TCA:</span>
+                        <span className="detail-value">
+                          {formatTCA(decision.suggestion.tca || '')}
                         </span>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="info-row">
-                        <span className="info-label">Threat:</span>
-                        <span className="info-value">{decision.suggestion.event_with}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Distance:</span>
-                        <span className="info-value danger">{decision.suggestion.distance_km?.toFixed(2)} km</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">TCA:</span>
-                        <span className="info-value">{formatTCA(decision.suggestion.tca || '')}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Priority:</span>
-                        <span 
-                          className="info-value priority"
-                          style={{ color: getPriorityColor(decision.suggestion.action?.priority || 'MEDIUM') }}
+                    )}
+                  </div>
+
+                  {decision.status === 'pending' && (
+                    <div className="action-controls">
+                      <select 
+                        value={selectedAction}
+                        onChange={(e) => handleActionSelect(decision.id, e.target.value)}
+                        className="action-select"
+                      >
+                        <option value="">Choose action...</option>
+                        {getActionOptions(decision).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="action-buttons">
+                        <button 
+                          className="btn-approve-small"
+                          onClick={() => onApprove(decision.id)}
                         >
-                          {decision.suggestion.action?.priority || 'MEDIUM'}
-                        </span>
+                          ✓
+                        </button>
+                        <button 
+                          className="btn-reject-small"
+                          onClick={() => onReject(decision.id)}
+                        >
+                          ✗
+                        </button>
                       </div>
-                    </>
+                    </div>
+                  )}
+
+                  {decision.status === 'approved' && (
+                    <div className="action-controls">
+                      <button 
+                        className="btn-execute-small"
+                        onClick={() => onExecute(decision.id)}
+                      >
+                        🚀 Execute
+                      </button>
+                    </div>
+                  )}
+
+                  {decision.status === 'executing' && (
+                    <div className="executing-indicator">
+                      <div className="spinner-small"></div>
+                      <span>Executing...</span>
+                    </div>
+                  )}
+
+                  {decision.status === 'completed' && (
+                    <div className="completed-indicator">
+                      <span>✓ Completed</span>
+                    </div>
                   )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {selectedDecision && (
-          <div className="decision-details">
-            <div className="details-header">
-              <h4>{selectedDecision.suggestion.type === 'space_weather_mitigation' ? 'Space Weather Mitigation' : 'Maneuver Details'}</h4>
-              <button 
-                className="btn-close"
-                onClick={() => setSelectedDecision(null)}
-              >
-                ×
-              </button>
             </div>
-
-            <div className="details-content">
-              {selectedDecision.suggestion.type === 'space_weather_mitigation' ? (
-                <div className="detail-section">
-                  <h5>Space Weather Threat</h5>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Satellite</span>
-                      <span className="detail-value">{selectedDecision.satelliteName}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Threat Type</span>
-                      <span className="detail-value">{selectedDecision.suggestion.threat}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Priority</span>
-                      <span 
-                        className="detail-value priority"
-                        style={{ color: getPriorityColor(selectedDecision.suggestion.priority || 'MEDIUM') }}
-                      >
-                        {selectedDecision.suggestion.priority || 'MEDIUM'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="detail-section">
-                    <h5>Recommended Action</h5>
-                    <div className="recommendation-box">
-                      <p>{selectedDecision.suggestion.recommendation}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="detail-section">
-                  <h5>Conjunction Information</h5>
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Primary Satellite</span>
-                      <span className="detail-value">{selectedDecision.satelliteName}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Secondary Object</span>
-                      <span className="detail-value">{selectedDecision.suggestion.event_with}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Miss Distance</span>
-                      <span className="detail-value danger">
-                        {selectedDecision.suggestion.distance_km?.toFixed(3)} km
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Relative Speed</span>
-                      <span className="detail-value">
-                        {selectedDecision.suggestion.relative_speed_km_s?.toFixed(2)} km/s
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Time to TCA</span>
-                      <span className="detail-value">
-                        {formatTCA(selectedDecision.suggestion.tca || '')}
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Priority Level</span>
-                      <span 
-                        className="detail-value"
-                        style={{ color: getPriorityColor(selectedDecision.suggestion.action?.priority || 'MEDIUM') }}
-                      >
-                        {selectedDecision.suggestion.action?.priority || 'MEDIUM'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="detail-section">
-                    <h5>Recommended Action</h5>
-                    <div className="action-card">
-                      <div className="action-type">
-                        {selectedDecision.suggestion.action?.type?.replace(/_/g, ' ').toUpperCase()}
-                      </div>
-                      <p className="action-description">
-                        {selectedDecision.suggestion.action?.description}
-                      </p>
-                      <div className="action-params">
-                        <div className="param">
-                          <span className="param-label">Timing:</span>
-                          <span className="param-value">{selectedDecision.suggestion.action?.timing}</span>
-                        </div>
-                        <div className="param">
-                          <span className="param-label">Δv Estimate:</span>
-                          <span className="param-value">{selectedDecision.suggestion.action?.delta_v_estimate}</span>
-                        </div>
-                        <div className="param">
-                          <span className="param-label">Fuel Cost:</span>
-                          <span className="param-value">{selectedDecision.suggestion.action?.fuel_cost}</span>
-                        </div>
-                      </div>
-                      <div className="action-reason">
-                        <strong>Rationale:</strong> {selectedDecision.suggestion.action?.reason}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="detail-actions">
-              {selectedDecision.status === 'pending' && (
-                <>
-                  <button 
-                    className="btn-action btn-approve"
-                    onClick={() => onApprove(selectedDecision.id)}
-                  >
-                    ✓ {selectedDecision.suggestion.type === 'space_weather_mitigation' ? 'Approve Mitigation' : 'Approve Maneuver'}
-                  </button>
-                  <button 
-                    className="btn-action btn-reject"
-                    onClick={() => onReject(selectedDecision.id)}
-                  >
-                    ✗ Reject
-                  </button>
-                </>
-              )}
-              {selectedDecision.status === 'approved' && (
-                <button 
-                  className="btn-action btn-execute"
-                  onClick={() => onExecute(selectedDecision.id)}
-                >
-                  {selectedDecision.suggestion.type === 'space_weather_mitigation' ? '🛡️ Execute Mitigation' : '🚀 Execute Maneuver'}
-                </button>
-              )}
-              {selectedDecision.status === 'executing' && (
-                <div className="executing-status">
-                  <div className="spinner"></div>
-                  <span>{selectedDecision.suggestion.type === 'space_weather_mitigation' ? 'Mitigation in progress...' : 'Maneuver in progress...'}</span>
-                </div>
-              )}
-              {selectedDecision.status === 'completed' && (
-                <div className="completed-status">
-                  ✓ {selectedDecision.suggestion.type === 'space_weather_mitigation' ? 'Mitigation completed successfully' : 'Maneuver completed successfully'}
-                </div>
-              )}
-            </div>
-          </div>
+          ))
         )}
       </div>
     </div>

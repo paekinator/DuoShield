@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: azspace-frontend
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_ENV
+        value: production

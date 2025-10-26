@@ -53,6 +53,14 @@
   object-position: center;
   max-width: none;
   transform: scaleX(1.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 0 rgba(0, 255, 136, 0));
+  animation: subtleFloat 6s ease-in-out infinite;
+}
+
+.logo:hover .logo-icon {
+  transform: scaleX(1.4) scale(1.05);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.3));
 }
 
 .logo-text {
@@ -137,5 +145,14 @@
   .header-cta {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
+  }
+}
+
+@keyframes subtleFloat {
+  0%, 100% { 
+    transform: scaleX(1.4) translateY(0px); 
+  }
+  50% { 
+    transform: scaleX(1.4) translateY(-2px); 
   }
 }

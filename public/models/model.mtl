@@ -1,0 +1,8 @@
+# Material file for Earth model
+newmtl EarthMaterial
+Ka 0.3 0.3 0.3
+Kd 0.5 0.7 0.9
+Ks 0.2 0.2 0.2
+Ns 50.0
+d 1.0
+illum 2

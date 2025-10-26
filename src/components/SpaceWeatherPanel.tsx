@@ -1,4 +1,3 @@
-import React from 'react';
 import './SpaceWeatherPanel.css';
 
 interface SpaceWeatherData {
@@ -51,12 +50,6 @@ const SpaceWeatherPanel = ({ data, loading = false }: SpaceWeatherPanelProps) =>
     }
   };
 
-  const getThreatIcon = (type: string) => {
-    if (type.includes('Geomagnetic')) return '🌍';
-    if (type.includes('Solar Flare')) return '☀️';
-    if (type.includes('Solar Wind')) return '💨';
-    return '📊';
-  };
 
   if (loading) {
     return (
