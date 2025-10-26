@@ -979,9 +979,12 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         const lon = sat.position.lon * (Math.PI / 180);
         const radius = 6371 + sat.position.alt;
         
-        mesh.position.x = radius * Math.cos(lat) * Math.cos(lon);
-        mesh.position.y = radius * Math.sin(lat);
-        mesh.position.z = radius * Math.cos(lat) * Math.sin(lon);
+        // Scale down the altitude to make satellites more visible and closer to Earth
+        const scaledRadius = 6371 + (sat.position.alt * 0.1); // Scale altitude by 0.1
+        
+        mesh.position.x = scaledRadius * Math.cos(lat) * Math.cos(lon);
+        mesh.position.y = scaledRadius * Math.sin(lat);
+        mesh.position.z = scaledRadius * Math.cos(lat) * Math.sin(lon);
       }
 
       // Update color based on threat level
@@ -1056,9 +1059,9 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       // This is ONLY visible when a satellite is selected from the list
       // Position is fixed at center - Earth zoom/rotation happens in background
       satelliteModelRef.current.visible = true;
-      satelliteModelRef.current.position.set(0, 0, 8000); // Fixed center position
+      satelliteModelRef.current.position.set(0, 0, 7000); // Lower position for better visibility
       
-      console.log('✅ Satellite indicator visible at center (0, 0, 8000)');
+      console.log('✅ Satellite indicator visible at center (0, 0, 7000)');
       
       console.log('Camera flying to:', rotatedOffset);
       console.log('Earth rotated to:', -targetLon, -targetLat * 0.5);
