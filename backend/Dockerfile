@@ -15,9 +15,13 @@ COPY backend/orbit.py .
 COPY backend/probability.py .
 COPY backend/swpc.py .
 COPY backend/utils.py .
+COPY backend/start.sh .
+
+# Make startup script executable
+RUN chmod +x start.sh
 
 # Expose port
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["./start.sh"]
