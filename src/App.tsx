@@ -258,6 +258,19 @@ function App() {
             <Footer />
           </div>
         } />
+        
+        {/* Catch-all route for client-side routing */}
+        <Route path="*" element={
+          <div className="page-wrapper">
+            <section className="hero-section">
+              <div className="container">
+                <h1>Page Not Found</h1>
+                <p>The page you're looking for doesn't exist.</p>
+                <a href="/" className="cta-button primary">Go Home</a>
+              </div>
+            </section>
+          </div>
+        } />
       </Routes>
     </Router>
   )
