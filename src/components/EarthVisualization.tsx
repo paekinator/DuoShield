@@ -735,8 +735,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     );
   }
 
-  // Check if any satellite is selected
-  const isAnySatelliteSelected = satellites.some(s => s.isSelected === true);
+  // Check if any satellite is selected (removed - no longer needed)
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
