@@ -16,3 +16,4 @@ node_modules/
 vercel.json
 .github/
 TLE_ALERT_SATELLITES.txt
+backend-only/
