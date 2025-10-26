@@ -616,13 +616,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
 
       // Selection ring animation removed
 
-      // Animate satellite 3D model (just rotate it, position is fixed)
-      if (satelliteModelRef.current && satelliteModelRef.current.visible) {
-        // Rotate the satellite model slowly for realistic effect
-        // Position stays fixed at (0, 0, 8000) - center of graphic
-        satelliteModelRef.current.rotation.y += 0.002; // Slower rotation
-        satelliteModelRef.current.rotation.x += 0.001; // Slower rotation
-      }
+      // Satellite model animation removed - cleaner UI
 
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
@@ -1012,13 +1006,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       earthGroupRef.current.rotation.y = -targetLon + (angleVariation * 0.1);
       earthGroupRef.current.rotation.x = -targetLat * 0.5 + (verticalVariation * 0.1);
       
-      // Show 3D satellite indicator hovering in CENTER of graphic screen
-      // This is ONLY visible when a satellite is selected from the list
-      // Position is fixed at center - Earth zoom/rotation happens in background
-      satelliteModelRef.current.visible = true;
-      satelliteModelRef.current.position.set(0, 0, 7000); // Lower position for better visibility
-      
-      console.log('✅ Satellite indicator visible at center (0, 0, 7000)');
+      // Satellite model on Earth removed - cleaner UI
       
       console.log('Camera flying to:', rotatedOffset);
       console.log('Earth rotated to:', -targetLon, -targetLat * 0.5);
@@ -1091,7 +1079,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         ref={satelliteOverlayRef}
         style={{
           position: 'absolute',
-          top: '25%',
+          top: '60%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           pointerEvents: 'none',
