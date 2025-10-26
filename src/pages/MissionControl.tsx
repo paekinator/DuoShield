@@ -6,7 +6,7 @@ import SpaceWeatherPanel from '../components/SpaceWeatherPanel';
 import AlertDetailOverlay from '../components/AlertDetailOverlay';
 import './MissionControl.css';
 
-const API = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+const API = import.meta.env.VITE_API_BASE ?? "https://your-railway-url.railway.app";
 
 interface Satellite {
   id: string;
