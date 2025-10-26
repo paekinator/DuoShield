@@ -32,7 +32,8 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
   // Selection ring and connection line removed
   // satelliteModelRef removed - no more blue dots
   const earthGroupRef = useRef<THREE.Group | null>(null); // Group containing Earth, wireframe, and grid
-  // Satellite overlay removed - cleaner UI without blue dots
+  const satelliteOverlayRef = useRef<HTMLDivElement>(null); // Separate canvas for satellite overlay
+  const satelliteOverlayModelRef = useRef<THREE.Group | null>(null); // Reference to overlay satellite model
   const [error, setError] = useState(false);
   
   // Camera animation state
@@ -532,7 +533,176 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
   // Track selected satellite ID for rotation reset
   const selectedSatelliteIdRef = useRef<string | null>(null);
 
-  // Satellite overlay removed - cleaner UI without blue dots
+  // Satellite Overlay - Separate Three.js scene for centered satellite indicator
+  useEffect(() => {
+    if (!satelliteOverlayRef.current) {
+      console.log('⚠️ Satellite overlay ref not ready yet');
+      return;
+    }
+
+    console.log('🛰️ Creating satellite overlay scene...');
+
+    // Create separate scene, camera, and renderer for satellite overlay
+    const overlayScene = new THREE.Scene();
+    
+    const overlayCamera = new THREE.PerspectiveCamera(
+      75, // Wider field of view for better coverage
+      1, // Square aspect ratio
+      0.1,
+      1000
+    );
+    overlayCamera.position.set(0, 0, 6); // Closer for better visibility
+
+    const overlayRenderer = new THREE.WebGLRenderer({ 
+      alpha: true, // Transparent background
+      antialias: true 
+    });
+    overlayRenderer.setSize(800, 800); // Large canvas for detailed satellite view
+    overlayRenderer.setClearColor(0x000000, 0); // Transparent
+    satelliteOverlayRef.current.appendChild(overlayRenderer.domElement);
+
+    // Add lighting for the satellite
+    const overlayAmbient = new THREE.AmbientLight(0xffffff, 0.8);
+    overlayScene.add(overlayAmbient);
+
+    const overlayDirectional = new THREE.DirectionalLight(0xffffff, 1.2);
+    overlayDirectional.position.set(5, 5, 5);
+    overlayScene.add(overlayDirectional);
+
+    // Load the same satellite model from home page
+    let satelliteOverlayModel: THREE.Group | null = null;
+    const overlayObjLoader = new OBJLoader();
+    const overlayMtlLoader = new MTLLoader();
+    
+    overlayMtlLoader.load(
+      '/models/satellite2.mtl',
+      (materials) => {
+        materials.preload();
+        overlayObjLoader.setMaterials(materials);
+        overlayObjLoader.load(
+          '/models/satellite2.obj',
+          (object) => {
+            satelliteOverlayModel = object;
+            satelliteOverlayModel.scale.set(0.12, 0.12, 0.12); // Even smaller scale
+            satelliteOverlayModel.position.set(0, 1.2, 0); // Moved up more for better centering
+            overlayScene.add(satelliteOverlayModel);
+            satelliteOverlayModelRef.current = satelliteOverlayModel; // Store reference
+            console.log('✅ Satellite overlay model loaded with materials!');
+          },
+          undefined,
+          (error) => {
+            console.warn('Could not load satellite overlay with MTL:', error);
+            // Fallback to OBJ only
+            loadOverlaySatelliteObjOnly();
+          }
+        );
+      },
+      undefined,
+      (error) => {
+        console.warn('Could not load satellite overlay MTL:', error);
+        loadOverlaySatelliteObjOnly();
+      }
+    );
+
+    const loadOverlaySatelliteObjOnly = () => {
+      const objLoaderFallback = new OBJLoader();
+      objLoaderFallback.load(
+        '/models/satellite1.obj',
+        (object) => {
+          satelliteOverlayModel = object;
+          satelliteOverlayModel.scale.set(0.12, 0.12, 0.12); // Even smaller scale
+          satelliteOverlayModel.position.set(0, 1.2, 0); // Moved up more for better centering
+          
+          satelliteOverlayModel.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.7,
+                roughness: 0.3,
+              });
+            }
+          });
+          
+          overlayScene.add(satelliteOverlayModel);
+          satelliteOverlayModelRef.current = satelliteOverlayModel; // Store reference
+          console.log('✅ Satellite overlay model loaded (OBJ only, no materials)');
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading satellite overlay:', error);
+          // Create fallback geometric satellite
+          createFallbackOverlaySatellite();
+        }
+      );
+    };
+
+    const createFallbackOverlaySatellite = () => {
+      const fallbackGroup = new THREE.Group();
+      
+      // Slightly smaller geometric satellite
+      const bodyGeometry = new THREE.BoxGeometry(0.45, 0.35, 0.35);
+      const bodyMaterial = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        metalness: 0.7,
+        roughness: 0.3,
+      });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      fallbackGroup.add(body);
+      
+      const panelGeometry = new THREE.BoxGeometry(0.7, 0.015, 0.28);
+      const panelMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1a2a4a,
+        metalness: 0.3,
+        roughness: 0.7,
+      });
+      
+      const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+      leftPanel.position.x = -0.6;
+      fallbackGroup.add(leftPanel);
+      
+      const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+      rightPanel.position.x = 0.6;
+      fallbackGroup.add(rightPanel);
+      
+      satelliteOverlayModel = fallbackGroup;
+      overlayScene.add(fallbackGroup);
+      satelliteOverlayModelRef.current = fallbackGroup; // Store reference
+      console.log('✅ Using fallback geometric satellite for overlay (files not found)');
+    };
+
+    // Animation loop for overlay
+    let animationId: number;
+    const animateOverlay = () => {
+      animationId = requestAnimationFrame(animateOverlay);
+
+      if (satelliteOverlayModel) {
+        // More horizontal rotation, less vertical (slower)
+        satelliteOverlayModel.rotation.y += 0.003; // Slower horizontal spin
+        satelliteOverlayModel.rotation.x += 0.0002; // Much less vertical tilt
+      }
+
+      overlayCamera.lookAt(0, 0, 0);
+      overlayRenderer.render(overlayScene, overlayCamera);
+    };
+    animateOverlay();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      if (satelliteOverlayRef.current) {
+        satelliteOverlayRef.current.removeChild(overlayRenderer.domElement);
+      }
+      overlayScene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+    };
+  }, []);
 
   // Reset satellite rotation when switching between satellites
   useEffect(() => {
@@ -541,7 +711,20 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     
     // Check if we switched to a different satellite
     if (currentSelectedId && currentSelectedId !== selectedSatelliteIdRef.current) {
-      console.log('🔄 Switching to different satellite...');
+      console.log('🔄 Switching to different satellite, resetting rotation...');
+      
+      if (satelliteOverlayModelRef.current) {
+        // Generate unique starting rotation based on satellite ID
+        const hash = currentSelectedId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const uniqueRotationY = (hash % 360) * (Math.PI / 180);
+        const uniqueRotationX = ((hash * 37) % 360) * (Math.PI / 180);
+        const uniqueRotationZ = ((hash * 73) % 360) * (Math.PI / 180);
+        
+        // Reset to unique rotation for this satellite
+        satelliteOverlayModelRef.current.rotation.set(uniqueRotationX, uniqueRotationY, uniqueRotationZ);
+        console.log(`✨ New satellite rotation: x=${uniqueRotationX.toFixed(2)}, y=${uniqueRotationY.toFixed(2)}, z=${uniqueRotationZ.toFixed(2)}`);
+      }
+      
       selectedSatelliteIdRef.current = currentSelectedId;
     } else if (!currentSelectedId) {
       selectedSatelliteIdRef.current = null;
@@ -735,7 +918,8 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     );
   }
 
-  // Check if any satellite is selected (removed - no longer needed)
+  // Check if any satellite is selected
+  const isAnySatelliteSelected = satellites.some(s => s.isSelected === true);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -755,7 +939,21 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         }} 
       />
       
-      {/* Satellite overlay removed - cleaner UI without blue dots */}
+      {/* Layer 2: Satellite 3D Canvas (Foreground Overlay) - ALWAYS exists, just hidden */}
+      <div 
+        ref={satelliteOverlayRef}
+        style={{
+          position: 'absolute',
+          top: '60%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+          zIndex: 1000,
+          filter: 'drop-shadow(0 0 50px rgba(102, 126, 234, 1)) drop-shadow(0 0 80px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 120px rgba(102, 126, 234, 0.6))',
+          animation: 'satelliteGlowPulse 2s ease-in-out infinite',
+          display: isAnySatelliteSelected ? 'block' : 'none', // Show/hide based on selection
+        }}
+      />
       
       {/* CSS Animation for pulsing glow */}
       <style>{`
