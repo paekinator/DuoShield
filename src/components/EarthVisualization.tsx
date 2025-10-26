@@ -29,8 +29,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const satelliteMeshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const orbitLinesRef = useRef<Map<string, THREE.Line>>(new Map());
-  const selectionRingRef = useRef<THREE.Mesh | null>(null);
-  const connectionLineRef = useRef<THREE.Line | null>(null);
+  // Selection ring and connection line removed
   const satelliteModelRef = useRef<THREE.Group | null>(null); // 3D satellite model from home page
   const earthGroupRef = useRef<THREE.Group | null>(null); // Group containing Earth, wireframe, and grid
   const satelliteOverlayRef = useRef<HTMLDivElement>(null); // Separate canvas for satellite overlay
@@ -392,30 +391,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     // Add the entire Earth group to the scene
     scene.add(earthGroup);
 
-    // Create selection ring for selected satellite
-    const selectionRingGeometry = new THREE.TorusGeometry(200, 15, 16, 32);
-    const selectionRingMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0.8,
-    });
-    const selectionRing = new THREE.Mesh(selectionRingGeometry, selectionRingMaterial);
-    selectionRing.visible = false;
-    scene.add(selectionRing);
-    selectionRingRef.current = selectionRing;
-
-    // Create connection line from Earth to satellite
-    const connectionGeometry = new THREE.BufferGeometry();
-    const connectionMaterial = new THREE.LineBasicMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0.5,
-      linewidth: 2,
-    });
-    const connectionLine = new THREE.Line(connectionGeometry, connectionMaterial);
-    connectionLine.visible = false;
-    scene.add(connectionLine);
-    connectionLineRef.current = connectionLine;
+    // Selection ring and connection line removed for cleaner UI
 
     // Load real satellite 3D model (same as home page)
     const satObjLoader = new OBJLoader();
@@ -638,20 +614,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         currentCameraPosition.current.z
       );
 
-      // Animate selection ring
-      if (selectionRingRef.current && selectionRingRef.current.visible) {
-        const time = Date.now() * 0.001;
-        selectionRingRef.current.rotation.x += 0.02;
-        selectionRingRef.current.rotation.y += 0.03;
-        
-        // Pulsing effect
-        const scale = 1 + Math.sin(time * 2) * 0.1;
-        selectionRingRef.current.scale.set(scale, scale, scale);
-        
-        // Opacity pulsing
-        const material = selectionRingRef.current.material as THREE.MeshBasicMaterial;
-        material.opacity = 0.6 + Math.sin(time * 3) * 0.2;
-      }
+      // Selection ring animation removed
 
       // Animate satellite 3D model (just rotate it, position is fixed)
       if (satelliteModelRef.current && satelliteModelRef.current.visible) {
@@ -1005,7 +968,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     const mainScene = sceneRef.current;
     
     if (selectedSat && selectedSat.position && selectedSat.position.x !== undefined && 
-        selectionRingRef.current && connectionLineRef.current && satelliteModelRef.current && 
+        satelliteModelRef.current && 
         mainScene && earthGroupRef.current && cameraRef.current) {
       
       console.log('Flying to satellite:', selectedSat.name);
@@ -1018,12 +981,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         selectedSat.position.z
       );
       
-      // Show selection ring around satellite at its ACTUAL orbital position
-      selectionRingRef.current.visible = true;
-      selectionRingRef.current.position.copy(satPos);
-      
-      // Hide the green connection line
-      connectionLineRef.current.visible = false;
+      // Selection ring and connection line removed for cleaner UI
       
       // Get unique camera angle for this specific satellite (ORIGINAL BEHAVIOR)
       const { angleVariation, verticalVariation } = getCameraAngleForSatellite(selectedSat.id);
@@ -1067,9 +1025,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       
     } else {
       // NO satellite selected from list - HIDE everything and zoom out
-      if (selectionRingRef.current && connectionLineRef.current && satelliteModelRef.current) {
-        selectionRingRef.current.visible = false;
-        connectionLineRef.current.visible = false;
+      if (satelliteModelRef.current) {
         
         // HIDE the 3D satellite indicator (only visible when item is selected)
         satelliteModelRef.current.visible = false;
