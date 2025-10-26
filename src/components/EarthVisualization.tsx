@@ -30,7 +30,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
   const satelliteMeshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const orbitLinesRef = useRef<Map<string, THREE.Line>>(new Map());
   // Selection ring and connection line removed
-  const satelliteModelRef = useRef<THREE.Group | null>(null); // 3D satellite model from home page
+  // satelliteModelRef removed - no more blue dots
   const earthGroupRef = useRef<THREE.Group | null>(null); // Group containing Earth, wireframe, and grid
   const satelliteOverlayRef = useRef<HTMLDivElement>(null); // Separate canvas for satellite overlay
   const satelliteOverlayModelRef = useRef<THREE.Group | null>(null); // Reference to overlay satellite model
@@ -394,134 +394,6 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     // Selection ring and connection line removed for cleaner UI
 
     // Satellite model loading removed - cleaner UI without blue dots
-    
-    // Satellite loading code removed - no more blue dots
-    /*
-    satMtlLoader.load(
-      '/models/satellite2.mtl',
-      (materials) => {
-        materials.preload();
-        satObjLoader.setMaterials(materials);
-        satObjLoader.load(
-          '/models/satellite2.obj',
-          (object) => {
-            const satelliteModel = object;
-            // Scale MUCH larger for screen overlay visibility
-            satelliteModel.scale.set(50, 50, 50);
-            satelliteModel.visible = false;
-            
-            // Set render order to ensure it renders on top of everything
-            satelliteModel.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.renderOrder = 999;
-                // Disable depth test so it always renders on top
-                if (child.material) {
-                  (child.material as THREE.Material).depthTest = false;
-                }
-              }
-            });
-            
-            scene.add(satelliteModel);
-            satelliteModelRef.current = satelliteModel;
-            console.log('Satellite 3D model loaded successfully (overlay mode)');
-          },
-          (progress) => {
-            console.log('Loading satellite OBJ:', (progress.loaded / progress.total * 100) + '% loaded');
-          },
-          (error) => {
-            console.warn('Could not load satellite with MTL, trying OBJ only:', error);
-            // Fallback: Try loading OBJ without MTL
-            loadSatelliteObjOnly();
-          }
-        );
-      },
-      undefined,
-      (error) => {
-        console.warn('Could not load satellite MTL, trying OBJ only:', error);
-        // Fallback: Try loading OBJ without MTL
-        loadSatelliteObjOnly();
-      }
-    );
-    
-    // Fallback function to load OBJ without MTL
-    const loadSatelliteObjOnly = () => {
-      const objLoaderFallback = new OBJLoader();
-      objLoaderFallback.load(
-        '/models/satellite1.obj',
-        (object) => {
-          const satelliteModel = object;
-          satelliteModel.scale.set(50, 50, 50);
-          
-          // Apply default material to all meshes and set render order
-          satelliteModel.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0x888888,
-                metalness: 0.7,
-                roughness: 0.3,
-                depthTest: false, // Render on top
-              });
-              child.renderOrder = 999;
-            }
-          });
-          
-          satelliteModel.visible = false;
-          scene.add(satelliteModel);
-          satelliteModelRef.current = satelliteModel;
-          console.log('Satellite 3D model loaded (OBJ only, no materials, overlay mode)');
-        },
-        (progress) => {
-          console.log('Loading satellite OBJ (fallback):', (progress.loaded / progress.total * 100) + '% loaded');
-        },
-        (error) => {
-          console.error('Error loading satellite model:', error);
-          // If all loading fails, create a simple fallback geometric satellite
-          createFallbackSatelliteModel();
-        }
-      );
-    };
-    
-    // Ultimate fallback: Create a simple geometric satellite if file loading fails
-    const createFallbackSatelliteModel = () => {
-      const fallbackGroup = new THREE.Group();
-      
-      // Main body (cube) - larger for visibility
-      const bodyGeometry = new THREE.BoxGeometry(200, 160, 160);
-      const bodyMaterial = new THREE.MeshStandardMaterial({
-        color: 0x888888,
-        metalness: 0.7,
-        roughness: 0.3,
-        depthTest: false, // Render on top
-      });
-      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-      body.renderOrder = 999;
-      fallbackGroup.add(body);
-      
-      // Solar panels - larger
-      const panelGeometry = new THREE.BoxGeometry(300, 4, 120);
-      const panelMaterial = new THREE.MeshStandardMaterial({
-        color: 0x1a2a4a,
-        metalness: 0.3,
-        roughness: 0.7,
-        depthTest: false, // Render on top
-      });
-      
-      const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-      leftPanel.position.x = -250;
-      leftPanel.renderOrder = 999;
-      fallbackGroup.add(leftPanel);
-      
-      const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-      rightPanel.position.x = 250;
-      rightPanel.renderOrder = 999;
-      fallbackGroup.add(rightPanel);
-      
-      fallbackGroup.visible = false;
-      scene.add(fallbackGroup);
-      satelliteModelRef.current = fallbackGroup;
-      console.log('Using fallback geometric satellite model (overlay mode)');
-    };
-    */
 
     // Add starfield
     const starsGeometry = new THREE.BufferGeometry();
@@ -1017,9 +889,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         targetCameraPosition.current = { x: 0, y: 0, z: 25000 };
         
         console.log('❌ No satellite selected - hiding indicator, zooming out');
-      }
     }
-
   }, [satellites]);
 
   if (error) {
