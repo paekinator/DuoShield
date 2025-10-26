@@ -740,8 +740,6 @@ const MissionControl = () => {
               alerts={alerts}
               onAcknowledge={acknowledgeAlert}
               onViewDetails={handleViewAlertDetails}
-              selectedAlert={selectedAlert}
-              onCloseOverlay={handleCloseAlertOverlay}
             />
           </div>
 

@@ -40,8 +40,7 @@ interface DecisionDashboardProps {
 }
 
 const DecisionDashboard = ({ decisions, onApprove, onReject, onExecute, onSelectAction }: DecisionDashboardProps) => {
-  const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [filter] = useState<'all' | 'pending' | 'approved'>('all');
   const [selectedAction, setSelectedAction] = useState<string>('');
 
   const filteredDecisions = filter === 'all' 
