@@ -55,6 +55,11 @@ def root():
 def health():
     return {"status": "ok", "utc": datetime.now(timezone.utc).isoformat()}
 
+@app.get("/healthz")
+def healthz():
+    """Kubernetes-style health check"""
+    return {"status": "healthy"}
+
 @app.get("/space-weather")
 def get_space_weather():
     """Get detailed space weather information"""
