@@ -393,11 +393,10 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
 
     // Selection ring and connection line removed for cleaner UI
 
-    // Load real satellite 3D model (same as home page)
-    const satObjLoader = new OBJLoader();
-    const satMtlLoader = new MTLLoader();
+    // Satellite model loading removed - cleaner UI without blue dots
     
-    // Try to load satellite with MTL (material) first
+    // Satellite loading code removed - no more blue dots
+    /*
     satMtlLoader.load(
       '/models/satellite2.mtl',
       (materials) => {
@@ -522,6 +521,7 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       satelliteModelRef.current = fallbackGroup;
       console.log('Using fallback geometric satellite model (overlay mode)');
     };
+    */
 
     // Add starfield
     const starsGeometry = new THREE.BufferGeometry();
@@ -962,7 +962,6 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
     const mainScene = sceneRef.current;
     
     if (selectedSat && selectedSat.position && selectedSat.position.x !== undefined && 
-        satelliteModelRef.current && 
         mainScene && earthGroupRef.current && cameraRef.current) {
       
       console.log('Flying to satellite:', selectedSat.name);
@@ -1013,10 +1012,6 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
       
     } else {
       // NO satellite selected from list - HIDE everything and zoom out
-      if (satelliteModelRef.current) {
-        
-        // HIDE the 3D satellite indicator (only visible when item is selected)
-        satelliteModelRef.current.visible = false;
         
         // Reset camera to default position - ZOOM BACK OUT (background animation)
         targetCameraPosition.current = { x: 0, y: 0, z: 25000 };
