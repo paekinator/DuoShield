@@ -977,7 +977,6 @@ const EarthVisualization = ({ satellites }: EarthVisualizationProps) => {
         // Fallback to lat/lon conversion if cartesian not available
         const lat = sat.position.lat * (Math.PI / 180);
         const lon = sat.position.lon * (Math.PI / 180);
-        const radius = 6371 + sat.position.alt;
         
         // Scale down the altitude to make satellites more visible and closer to Earth
         const scaledRadius = 6371 + (sat.position.alt * 0.1); // Scale altitude by 0.1
