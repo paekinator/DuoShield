@@ -8,8 +8,13 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
-COPY . .
+# Copy only the backend application code
+COPY app.py .
+COPY celestrak.py .
+COPY orbit.py .
+COPY probability.py .
+COPY swpc.py .
+COPY utils.py .
 
 # Expose port
 EXPOSE 8000
